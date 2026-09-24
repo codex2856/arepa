@@ -67,6 +67,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const ease = {
   outExpo: (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t)),
   outCubic: (t) => 1 - Math.pow(1 - t, 3),
+  inCubic: (t) => t * t * t,
   inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
   outBack: (t) => { const c = 1.35; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
 };
@@ -166,6 +167,7 @@ const scenes = [...document.querySelectorAll(".scene")].map((node) => {
     stage: q(".stage"), spin: q(".spin"), base: q(".layer--base"), lid: q(".layer--lid"), closed: q(".layer--closed"), caption: q(".stage__caption"),
     ings: qa(".layer--ing"), crumbs: qa(".crumb"), items: qa(".ing-list li"),
     word: q(".recipe__bgword"), copy: q(".recipe__copy"), nameLine: q(".recipe__name .line > span"),
+    birdImgs: qa(".v-bird img"), eyelid: q(".v-lid"), clouds: qa(".v-cloud"),
     anim: Object.fromEntries(qa("[data-anim]").map((n) => [n.dataset.anim, n])),
   };
 });
@@ -196,6 +198,8 @@ const t0 = performance.now();
 // ---------------------------------------------------------------- renderers
 function renderHero(s, p, time) {
   const a = s.anim;
+  if (s.seen == null) s.seen = time;
+  time -= s.seen;
   const intro = ease.outExpo(clamp((time - 150) / 1400));
   const out = ease.inOutCubic(seg(p, 0.22, 0.45));
   a["hero-title"].querySelectorAll(".line > span").forEach((ln, i) => {
@@ -207,6 +211,10 @@ function renderHero(s, p, time) {
   a["hero-text"].style.opacity = intro * (1 - out);
   a["hero-text"].style.transform = `translateY(${(1 - intro) * 20 - out * 30}px)`;
   a["hero-hint"].style.opacity = intro * (1 - seg(p, 0, 0.05));
+
+  // 0 · Salto Ángel background: slow parallax zoom, fades into the page blue as we leave
+  a["hero-bg"].firstElementChild.style.transform = `translateY(${-p * 4}%) scale(${1.45 + p * 0.06})`;   // zoomed toward the shelves so the painted arepa (bottom right) stays out of frame
+  a["hero-bg"].style.opacity = 1 - seg(p, 0.55, 1) * 0.85;
 
   // 1 · steam starts rising from the hot arepa
   const open = ease.inOutCubic(seg(p, 0.04, 0.8));
@@ -231,6 +239,152 @@ function renderHero(s, p, time) {
   const exit = 0;
   s.stage.style.opacity = enter * (1 - exit);
   s.stage.style.transform = `translateY(${(1 - enter) * 60 + exit * -12}px) scale(${lerp(0.9, 1, enter) - exit * 0.1}) rotateX(${mouse.sy * -8}deg) rotateY(${mouse.sx * 10}deg)`;
+}
+
+// ---------------------------------------------------------------- viaje del turpial
+// One long pinned scene split into chapters by scroll progress. Clouds hide every background switch.
+//   A araguaney → B selva → C Salto Ángel → D Caracas y el Ávila → E la arepera (the bird flies in the door)
+const PERCH = { x: 0.218, y: 0.433 };                    // point on the branch image where the bird stands
+const POSES = { posado: { w: 310, h: 227, fx: 0.65, fy: 0.97 }, despega: { w: 321, h: 335, fx: 0.54, fy: 0.96 }, arriba: { w: 348, h: 314 }, abajo: { w: 359, h: 252 } };
+// chapters after A. Each background drifts/zooms a little; the bird comes out of the clouds at `from`
+// and glides to `to` ([x, y] as fractions of the screen, then scale).
+const CHAPTERS = [
+  { id: "v-tree" },                                                                             // A araguaney
+  { id: "v-morrocoy", cap: "v-cap-m", origin: "50% 62%", zoom: [1.04, 1.22], pan: [1.5, -1.5], from: [0.22, 0.3, 0.8], to: [0.52, 0.26, 0.76] },
+  { id: "v-selva",    cap: "v-cap-b", origin: "50% 55%", zoom: [1.16, 1.02], pan: [2, -2],     from: [0.24, 0.3, 0.8], to: [0.46, 0.26, 0.78] },
+  { id: "v-roraima",  cap: "v-cap-r", origin: "55% 38%", zoom: [1.04, 1.3],  pan: [0, 0],      from: [0.26, 0.42, 0.8], to: [0.56, 0.3, 0.55] },
+  { id: "v-salto",    cap: "v-cap-c", origin: "64% 48%", zoom: [1.04, 1.5],  pan: [0, 0],      from: [0.38, 0.5, 0.8], to: [0.6, 0.42, 0.28] },
+  { id: "v-caracas",  cap: "v-cap-d", origin: "45% 80%", zoom: [1.04, 1.32], pan: [1.5, -1.5], from: [0.3, 0.3, 0.75], to: [0.6, 0.46, 0.7] },
+  { id: "v-arepera",  cap: "v-cap-e", origin: null,      from: [0.22, 0.36, 0.72] },
+];
+const CUTS = [0.13, 0.26, 0.4, 0.53, 0.66, 0.81];         // where each background switches (hidden by clouds)
+const HALF = 0.03;                                        // half length of each cloud crossing
+const DOOR = { x: 0.525, y: 0.6 };                        // open door on the arepera facade (fraction of the image)
+const CLOUDS = [                                          // resting spot (vw/vh fraction) of each cloud while it covers the screen
+  { x: 0.18, y: 0.28, s: 1.2 }, { x: 0.78, y: 0.22, s: 1.1 }, { x: 0.5, y: 0.52, s: 1.5 },
+  { x: 0.12, y: 0.78, s: 1.3 }, { x: 0.86, y: 0.72, s: 1.35 }, { x: 0.46, y: 0.12, s: 1.0 },
+];
+function cloudWipe(s, t, vw, vh) {
+  // t 0 → .5: clouds roll in from the edges and cover everything; .5 → 1: we fly through them (they grow and vanish)
+  const inn = ease.outCubic(clamp(t * 2)), out = ease.inOutCubic(clamp(t * 2 - 1));
+  s.clouds.forEach((c, i) => {
+    const C = CLOUDS[i], dx = C.x - 0.5, dy = C.y - 0.5;
+    const push = lerp(1.9, 1, inn) + out * 1.4;             // distance from the centre (1 = resting spot)
+    const x = vw * (0.5 + dx * push), y = vh * (0.5 + dy * push);
+    const sc = C.s * (lerp(0.7, 1, inn) + out * 2.2);
+    c.style.opacity = t <= 0 || t >= 1 ? 0 : inn * (1 - out);
+    c.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${sc})${i % 2 ? " scaleX(-1)" : ""}`;
+  });
+  s.anim["v-haze"].style.opacity = Math.pow(Math.sin(clamp(t) * Math.PI), 2.2) * 0.97;
+}
+// screen position of a point (fx, fy fractions) of a full-screen object-fit:cover 16:9 image
+function coverPoint(fx, fy, vw, vh) {
+  const W = Math.max(vw, vh * 16 / 9), H = W * 9 / 16;
+  return { x: (vw - W) / 2 + fx * W, y: (vh - H) / 2 + fy * H };
+}
+function renderViaje(s, p, time) {
+  const a = s.anim, vw = window.innerWidth, vh = window.innerHeight;
+  const W = Math.max(vw, vh * 16 / 9), H = W * 9 / 16;
+  const k = Math.min(W * 0.21, vw * 0.5) / 310;          // px per source pixel → same bird size in every pose
+  const AB = CUTS[0], DE = CUTS[CUTS.length - 1];
+  const q = seg(p, 0, AB / 0.82);                         // chapter A local progress (clouds arrive near its end)
+  const chap = CUTS.filter((c) => p >= c).length;
+  CHAPTERS.forEach((ch, i) => { a[ch.id].style.opacity = chap === i ? 1 : 0; });
+
+  // ── A · camera pulls back: the branch rushes past us, the whole tree appears
+  const z = ease.inOutCubic(seg(q, 0.14, 0.78));
+  // starts a bit closer and nudged right so the bird sits nearer the centre (never showing the image edge)
+  const portrait = vw < vh, rs0 = portrait ? 1 : 1.3;
+  const tx0 = Math.min(vw * (portrait ? 0.3 : 0.28) - vw / 2 - (PERCH.x - 0.5) * W * rs0, 0.5 * W * rs0 - vw / 2);
+  const ty0 = Math.min(0.06 * H, 0.5 * H * rs0 - vh / 2);
+  const rs = lerp(rs0, 2.8, z), rtx = lerp(tx0, -0.45 * W, z), rty = lerp(ty0, 0.4 * H, z);
+  a["v-box"].style.transform = `translate(${rtx}px, ${rty}px) scale(${rs})`;
+  a["v-box"].style.filter = `blur(${z * 10}px)`;
+  a["v-box"].style.opacity = chap === 0 ? 1 - seg(q, 0.5, 0.72) : 0;
+  a["v-tree"].style.transform = `scale(${lerp(2.8, 1.02, z) + seg(q, 0.8, 1) * 0.1}) translateY(${Math.sin(time / 2600) * 0.3}%)`;
+  a["v-tree"].style.transformOrigin = "66% 34%";
+  a["v-tree"].style.filter = `blur(${(1 - z) * 5}px)`;
+
+  // ── middle chapters: each background drifts and slowly zooms while we cross it
+  CHAPTERS.forEach((ch, i) => {
+    if (!ch.zoom || i === 0) return;
+    const t = seg(p, CUTS[i - 1] - 0.02, (CUTS[i] ?? 1) + 0.02);
+    a[ch.id].style.transformOrigin = ch.origin;
+    a[ch.id].style.transform = `scale(${lerp(ch.zoom[0], ch.zoom[1], ease.inOutCubic(t))}) translateX(${lerp(ch.pan[0], ch.pan[1], t)}%)`;
+  });
+
+  // ── E · la arepera: the camera pushes into the open door
+  const e = seg(p, DE - 0.02, 1);
+  const push = ease.inCubic(seg(e, 0.25, 1));
+  a["v-arepera"].style.transformOrigin = `${DOOR.x * 100}% ${DOOR.y * 100}%`;
+  a["v-arepera"].style.transform = `scale(${lerp(1.03, 3.4, push)})`;
+  const door = coverPoint(DOOR.x, DOOR.y, vw, vh);
+
+  // ── clouds between chapters
+  const wipe = CUTS.map((cut) => seg(p, cut - HALF, cut + HALF)).find((t) => t > 0 && t < 1);
+  cloudWipe(s, wipe || 0, vw, vh);
+
+  // ── the bird: perched → takes off → flapping through every chapter
+  const fx = vw / 2 + (PERCH.x - 0.5) * W * rs + rtx;
+  const fy = vh / 2 + (PERCH.y - 0.5) * H * rs + rty;
+  const take = seg(q, 0.1, 0.18);
+  let pose = "posado";
+  if (take > 0 && take < 1) pose = "despega";
+  else if (take >= 1) pose = Math.floor(time / 120) % 2 ? "arriba" : "abajo";
+  const P = POSES[pose], w = P.w * k, h = P.h * k;
+  const sx = fx + (0.5 - POSES.posado.fx) * POSES.posado.w * k, sy = fy + (0.5 - POSES.posado.fy) * POSES.posado.h * k;
+  const f1 = ease.inOutCubic(seg(q, 0.12, 0.5));
+  const bob = take >= 1 ? Math.sin(time / 260) * 8 : 0;  // perched = completely still
+  let cx = lerp(sx, vw * 0.66, f1), cy = lerp(sy, vh * 0.34, f1) + bob;
+  let bs = lerp(1, 0.72, ease.inOutCubic(seg(q, 0.3, 0.75)));
+  if (pose === "posado" || pose === "despega") {         // stand on the feet, not on the centre
+    cx = fx + (0.5 - P.fx) * w + (cx - sx); cy = fy + (0.5 - P.fy) * h + (cy - sy);
+  }
+  const to = (x, y, sc, t) => { cx = lerp(cx, x, t); cy = lerp(cy, y, t); if (sc != null) bs = lerp(bs, sc, t); };
+  const through = (cut) => ease.inOutCubic(seg(p, cut - HALF, cut + HALF * 1.2));
+  CHAPTERS.forEach((ch, i) => {
+    if (i === 0) return;
+    const [x0, y0, s0] = ch.from;
+    to(vw * (portrait ? Math.max(x0, 0.3) : x0), vh * y0, s0, through(CUTS[i - 1]));
+    if (ch.to) { const [x1, y1, s1] = ch.to; to(vw * x1, vh * y1, s1, ease.inOutCubic(seg(p, CUTS[i - 1] + HALF, CUTS[i] - HALF * 0.5))); }
+  });
+  const enter = ease.inOutCubic(seg(e, 0.2, 0.8));
+  to(door.x, door.y, 0.22, enter);
+  a["v-bird"].style.opacity = 1 - seg(e, 0.72, 0.84);
+  const tilt = take >= 1 ? lerp(-8, 4, f1) + Math.sin(time / 900) * 3 : 0;
+  a["v-bird"].style.transform = `translate(${cx}px, ${cy}px) scale(${bs}) rotate(${tilt}deg)`;
+  s.birdImgs.forEach((img) => {
+    const on = img.dataset.pose === pose;
+    img.classList.toggle("is-on", on);
+    if (on) { img.style.width = `${w}px`; img.style.left = `${-w / 2}px`; img.style.top = `${-h / 2}px`; }
+  });
+  // blink: a small eyelid (head colour) closes over the eye now and then, sometimes twice in a row
+  const lid = s.eyelid, ls = w * 0.066;
+  lid.style.display = pose === "posado" ? "block" : "none";
+  if (pose === "posado") {
+    const cyc = time % 3600, dbl = Math.floor(time / 3600) % 3 === 1;
+    const blink = (t) => (t >= 0 && t < 170 ? Math.sin((t / 170) * Math.PI) : 0);
+    const closed = Math.max(blink(cyc - 2400), dbl ? blink(cyc - 2620) : 0);
+    lid.style.width = lid.style.height = `${ls}px`;
+    lid.style.left = `${-w / 2 + 0.807 * w - ls / 2}px`;
+    lid.style.top = `${-h / 2 + 0.0695 * h - ls / 2}px`;
+    lid.style.transform = `scaleY(${closed})`;
+  }
+
+  // ── copy
+  const intro = ease.outExpo(clamp((time - 200) / 1400));
+  const out = ease.inOutCubic(seg(q, 0.04, 0.16));
+  a["v-copy"].querySelectorAll(".line > span").forEach((ln, i) => {
+    const t = ease.outExpo(clamp((time - 250 - i * 120) / 1300));
+    ln.style.transform = `translateY(${(1 - t) * 110 - out * 40}%)`;
+  });
+  a["v-copy"].style.opacity = 1 - out;
+  a["v-start"].style.opacity = intro * (auto.state === "playing" ? 0 : 1);
+  a["v-start"].style.transform = `translateY(${(1 - intro) * 20}px)`;
+  const cap = (el, x0, x1) => { const v = seg(p, x0, x0 + 0.02) * (1 - seg(p, x1 - 0.02, x1)); el.style.opacity = v; el.style.transform = `translateY(${(1 - v) * 12}px)`; };
+  cap(a["v-caption"], AB * 0.55, AB - HALF);
+  CHAPTERS.forEach((ch, i) => { if (i > 0) cap(a[ch.cap], CUTS[i - 1] + 0.04, i < CUTS.length ? CUTS[i] - HALF : 0.93); });
+  a["v-fade"].style.opacity = seg(p, 0.9, 1);
 }
 
 function renderRecipe(s, p, time) {
@@ -306,6 +460,40 @@ function applyTheme(recipe) {
   document.body.style.backgroundColor = recipe ? recipe.bg : "#08133a";
 }
 
+// ---------------------------------------------------------------- autoplay of the turpial journey
+// The journey is one screen with an "Empezar" button. Pressing it plays the whole journey by itself
+// (scroll is blocked meanwhile) and drops you at the arepa, where normal scrolling takes over.
+// Coming back to the top shows the first frame again, so the button can be pressed once more.
+const AUTO_SECONDS = 58;
+const auto = { state: "idle", p: 0, start: 0 };            // idle (first visit, locked) → playing → done
+const locked = () => auto.state === "idle" || auto.state === "playing";
+const lockKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
+const blockScroll = (e) => { if (locked()) e.preventDefault(); };
+window.addEventListener("wheel", blockScroll, { passive: false });
+window.addEventListener("touchmove", blockScroll, { passive: false });
+window.addEventListener("keydown", (e) => { if (locked() && lockKeys.has(e.key)) e.preventDefault(); });
+window.addEventListener("scroll", () => { if (locked() && window.scrollY !== 0 && !auto.test) window.scrollTo(0, 0); });
+document.documentElement.classList.add("is-locked");
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+window.scrollTo(0, 0);
+let snap = false;                                         // next frame: jump every scene straight to its scroll position
+function startJourney() {
+  if (auto.state === "playing") return;
+  window.scrollTo(0, 0);
+  auto.state = "playing"; auto.start = performance.now();
+  document.documentElement.classList.add("is-locked", "is-playing");
+}
+function finishJourney() {
+  if (auto.state === "done") return;
+  auto.state = "done";
+  document.documentElement.classList.remove("is-locked", "is-playing");
+  window.scrollTo(0, document.getElementById("hero").offsetTop);
+  snap = true;
+}
+document.querySelector(".v-start").addEventListener("click", startJourney);
+document.querySelector(".v-skip").addEventListener("click", finishJourney);
+if (reduceMotion) finishJourney();
+
 function frame(now) {
   const time = now - t0;
   const y = window.scrollY;
@@ -323,20 +511,30 @@ function frame(now) {
   let current = null;
   scenes.forEach((s) => {
     s.target = clamp((y - s.top) / (s.len || 1));
-    s.p = reduceMotion ? s.target : lerp(s.p, s.target, 0.12);
+    if (s.node.id === "viaje") {                                    // the journey only plays by itself
+      if (auto.state === "playing") {
+        auto.p = clamp((now - auto.start) / (AUTO_SECONDS * 1000));
+        s.target = s.p = auto.p;
+        if (auto.p >= 1) finishJourney();
+      } else s.target = s.p = 0;                                      // otherwise it waits on the first frame
+    }
+    s.p = reduceMotion || snap ? s.target : lerp(s.p, s.target, 0.12);
     if (Math.abs(s.p - s.target) < 0.0005) s.p = s.target;
     const visible = y + vh > s.top && y < s.top + s.len + vh;
     if (y + vh * 0.5 >= s.top && y + vh * 0.5 < s.top + s.len + vh) current = s;
     if (!visible) return;
     if (s.recipe) renderRecipe(s, s.p, time);
+    else if (s.node.id === "viaje") renderViaje(s, s.p, time);
     else renderHero(s, s.p, time);
   });
+  snap = false;
   applyTheme(current && current.recipe);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-// smooth anchor navigation that lands where the arepa is already full
+// menu links jump straight to their section (no animations of the sections in between),
+// landing where the arepa is already full
 document.querySelectorAll('a[href^="#"]').forEach((a) => {
   a.addEventListener("click", (e) => {
     const id = a.getAttribute("href").slice(1);
@@ -344,7 +542,10 @@ document.querySelectorAll('a[href^="#"]').forEach((a) => {
     const target = document.getElementById(id);
     if (!target) return;
     e.preventDefault();
+    if (id === "viaje") { if (auto.state !== "playing") window.scrollTo(0, 0); return; }
+    if (auto.state !== "done") finishJourney();
     const y = s && s.recipe ? s.top + s.len * 0.9 : target.offsetTop;
-    window.scrollTo({ top: y, behavior: reduceMotion ? "auto" : "smooth" });
+    window.scrollTo({ top: y, behavior: "auto" });
+    snap = true;
   });
 });
