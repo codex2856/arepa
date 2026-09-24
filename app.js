@@ -73,6 +73,9 @@ const ease = {
 };
 const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// touch devices and narrow screens skip the priciest per-frame effect (an animated blur filter,
+// which forces a re-rasterize every tick) so scrolling stays smooth on phones.
+const lowPower = window.matchMedia("(max-width: 860px), (pointer: coarse)").matches;
 
 const FROM = {
   left: { x: -130, y: -10, r: -55 },
@@ -252,12 +255,11 @@ const CHAPTERS = [
   { id: "v-tree" },                                                                             // A araguaney
   { id: "v-morrocoy", cap: "v-cap-m", origin: "50% 62%", zoom: [1.04, 1.22], pan: [1.5, -1.5], from: [0.22, 0.3, 0.8], to: [0.52, 0.26, 0.76] },
   { id: "v-selva",    cap: "v-cap-b", origin: "50% 55%", zoom: [1.16, 1.02], pan: [2, -2],     from: [0.24, 0.3, 0.8], to: [0.46, 0.26, 0.78] },
-  { id: "v-roraima",  cap: "v-cap-r", origin: "55% 38%", zoom: [1.04, 1.3],  pan: [0, 0],      from: [0.26, 0.42, 0.8], to: [0.56, 0.3, 0.55] },
   { id: "v-salto",    cap: "v-cap-c", origin: "64% 48%", zoom: [1.04, 1.5],  pan: [0, 0],      from: [0.38, 0.5, 0.8], to: [0.6, 0.42, 0.28] },
   { id: "v-caracas",  cap: "v-cap-d", origin: "45% 80%", zoom: [1.04, 1.32], pan: [1.5, -1.5], from: [0.3, 0.3, 0.75], to: [0.6, 0.46, 0.7] },
   { id: "v-arepera",  cap: "v-cap-e", origin: null,      from: [0.22, 0.36, 0.72] },
 ];
-const CUTS = [0.13, 0.26, 0.4, 0.53, 0.66, 0.81];         // where each background switches (hidden by clouds)
+const CUTS = [0.15, 0.3, 0.46, 0.61, 0.78];               // where each background switches (hidden by clouds)
 const HALF = 0.03;                                        // half length of each cloud crossing
 const DOOR = { x: 0.525, y: 0.6 };                        // open door on the arepera facade (fraction of the image)
 const CLOUDS = [                                          // resting spot (vw/vh fraction) of each cloud while it covers the screen
@@ -299,11 +301,11 @@ function renderViaje(s, p, time) {
   const ty0 = Math.min(0.06 * H, 0.5 * H * rs0 - vh / 2);
   const rs = lerp(rs0, 2.8, z), rtx = lerp(tx0, -0.45 * W, z), rty = lerp(ty0, 0.4 * H, z);
   a["v-box"].style.transform = `translate(${rtx}px, ${rty}px) scale(${rs})`;
-  a["v-box"].style.filter = `blur(${z * 10}px)`;
+  if (!lowPower) a["v-box"].style.filter = `blur(${z * 10}px)`;
   a["v-box"].style.opacity = chap === 0 ? 1 - seg(q, 0.5, 0.72) : 0;
   a["v-tree"].style.transform = `scale(${lerp(2.8, 1.02, z) + seg(q, 0.8, 1) * 0.1}) translateY(${Math.sin(time / 2600) * 0.3}%)`;
   a["v-tree"].style.transformOrigin = "66% 34%";
-  a["v-tree"].style.filter = `blur(${(1 - z) * 5}px)`;
+  if (!lowPower) a["v-tree"].style.filter = `blur(${(1 - z) * 5}px)`;
 
   // ── middle chapters: each background drifts and slowly zooms while we cross it
   CHAPTERS.forEach((ch, i) => {
@@ -384,7 +386,7 @@ function renderViaje(s, p, time) {
   const cap = (el, x0, x1) => { const v = seg(p, x0, x0 + 0.02) * (1 - seg(p, x1 - 0.02, x1)); el.style.opacity = v; el.style.transform = `translateY(${(1 - v) * 12}px)`; };
   cap(a["v-caption"], AB * 0.55, AB - HALF);
   CHAPTERS.forEach((ch, i) => { if (i > 0) cap(a[ch.cap], CUTS[i - 1] + 0.04, i < CUTS.length ? CUTS[i] - HALF : 0.93); });
-  a["v-fade"].style.opacity = seg(p, 0.9, 1);
+  if (auto.state === "playing") a["v-fade"].style.opacity = seg(p, 0.86, 1);
 }
 
 function renderRecipe(s, p, time) {
@@ -419,7 +421,8 @@ function renderRecipe(s, p, time) {
     const f = FROM[g.from];
     const sc = lerp(1.75, g.scale, ease.outCubic(t));
     img.style.opacity = clamp(t * 4);
-    img.style.filter = `blur(${(1 - ease.outCubic(t)) * 18}px) drop-shadow(0 ${lerp(60, 12, t)}px ${lerp(40, 16, t)}px rgba(0,0,0,${lerp(0.2, 0.45, t)}))`;
+    const dropShadow = `drop-shadow(0 ${lerp(60, 12, t)}px ${lerp(40, 16, t)}px rgba(0,0,0,${lerp(0.2, 0.45, t)}))`;
+    img.style.filter = lowPower ? dropShadow : `blur(${(1 - ease.outCubic(t)) * 18}px) ${dropShadow}`;
     img.style.transform = `translate3d(${(1 - e) * f.x}%, ${(1 - e) * f.y}%, 0) rotate(${g.rot + (1 - e) * f.r}deg) scale(${sc})`;
     s.items[i + 1].classList.toggle("is-in", t > 0.92);
   });
@@ -469,10 +472,15 @@ const auto = { state: "idle", p: 0, start: 0 };            // idle (first visit,
 const locked = () => auto.state === "idle" || auto.state === "playing";
 const lockKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
 const blockScroll = (e) => { if (locked()) e.preventDefault(); };
+const blockKeys = (e) => { if (locked() && lockKeys.has(e.key)) e.preventDefault(); };
+const snapToTop = () => { if (locked() && window.scrollY !== 0 && !auto.test) window.scrollTo(0, 0); };
+// non-passive listeners force the browser to wait on the main thread before every scroll/touch tick,
+// which is only worth paying for during the brief intro lock — they're removed for good once it ends
+// so the rest of the (long) page scrolls at full native speed, especially on mobile.
 window.addEventListener("wheel", blockScroll, { passive: false });
 window.addEventListener("touchmove", blockScroll, { passive: false });
-window.addEventListener("keydown", (e) => { if (locked() && lockKeys.has(e.key)) e.preventDefault(); });
-window.addEventListener("scroll", () => { if (locked() && window.scrollY !== 0 && !auto.test) window.scrollTo(0, 0); });
+window.addEventListener("keydown", blockKeys);
+window.addEventListener("scroll", snapToTop);
 document.documentElement.classList.add("is-locked");
 if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 window.scrollTo(0, 0);
@@ -489,6 +497,15 @@ function finishJourney() {
   document.documentElement.classList.remove("is-locked", "is-playing");
   window.scrollTo(0, document.getElementById("hero").offsetTop);
   snap = true;
+  // the screen is covered by .v-fade at this point (or skipped early, already transparent) —
+  // ease it back out instead of popping straight to the arepa, so landing feels soft, not explosive
+  const fade = document.querySelector(".v-fade");
+  fade.style.transition = reduceMotion ? "none" : "opacity .9s ease";
+  requestAnimationFrame(() => { fade.style.opacity = 0; });
+  window.removeEventListener("wheel", blockScroll);
+  window.removeEventListener("touchmove", blockScroll);
+  window.removeEventListener("keydown", blockKeys);
+  window.removeEventListener("scroll", snapToTop);
 }
 document.querySelector(".v-start").addEventListener("click", startJourney);
 document.querySelector(".v-skip").addEventListener("click", finishJourney);

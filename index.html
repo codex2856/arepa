@@ -9,6 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- these three compose the very first frame (tree + branch + perched bird); preloading them
+       stops the branch or bird from popping in late on a slow connection, after the page is already interactive -->
+  <link rel="preload" as="image" href="img/araguaney-arbol.webp" />
+  <link rel="preload" as="image" href="img/araguaney-rama.webp" />
+  <link rel="preload" as="image" href="img/turpial-posado.webp" />
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -29,19 +34,18 @@
   </header>
 
   <main>
-    <!-- VIAJE DEL TURPIAL: araguaney → Morrocoy → selva → Roraima → Salto Ángel → Caracas → la arepera -->
+    <!-- VIAJE DEL TURPIAL: araguaney → Morrocoy → selva → Salto Ángel → Caracas → la arepera -->
     <section class="scene scene--viaje" id="viaje" data-length="1">
       <div class="sticky v-sticky">
-        <img class="v-tree" data-anim="v-tree" src="img/araguaney-arbol.webp" alt="Araguaney en flor en los llanos" />
+        <img class="v-tree" data-anim="v-tree" src="img/araguaney-arbol.webp" alt="Araguaney en flor en los llanos" fetchpriority="high" />
         <img class="v-bg" data-anim="v-morrocoy" src="img/morrocoy.webp" alt="Cayos de Morrocoy" />
         <img class="v-bg" data-anim="v-selva" src="img/selva.webp" alt="Selva de Canaima con tepuyes al fondo" />
-        <img class="v-bg" data-anim="v-roraima" src="img/roraima.webp" alt="Tepuy Roraima en la Gran Sabana" />
         <img class="v-bg" data-anim="v-salto" src="img/salto-angel-ilustrado.webp" alt="Salto Ángel ilustrado" />
         <img class="v-bg" data-anim="v-caracas" src="img/caracas-avila.webp" alt="Caracas al pie del Ávila" />
         <img class="v-bg" data-anim="v-arepera" src="img/arepera-fachada.webp" alt="Fachada de la arepera" />
-        <div class="v-box" data-anim="v-box"><img class="v-rama" src="img/araguaney-rama.webp" alt="" /></div>
+        <div class="v-box" data-anim="v-box"><img class="v-rama" src="img/araguaney-rama.webp" alt="" fetchpriority="high" /></div>
         <div class="v-bird" data-anim="v-bird" aria-hidden="true">
-          <img data-pose="posado" src="img/turpial-posado.webp" alt="" />
+          <img data-pose="posado" src="img/turpial-posado.webp" alt="" fetchpriority="high" />
           <img data-pose="despega" src="img/turpial-despega.webp" alt="" />
           <img data-pose="arriba" src="img/turpial-alas-arriba.webp" alt="" />
           <img data-pose="abajo" src="img/turpial-alas-abajo.webp" alt="" />
@@ -60,7 +64,6 @@
         <p class="v-caption" data-anim="v-caption">Araguaney · el árbol nacional, en flor</p>
         <p class="v-caption" data-anim="v-cap-m">Morrocoy · cayos de agua turquesa</p>
         <p class="v-caption" data-anim="v-cap-b">La selva · donde pastan los chigüires</p>
-        <p class="v-caption" data-anim="v-cap-r">Roraima · el tepuy de la Gran Sabana</p>
         <p class="v-caption" data-anim="v-cap-c">Salto Ángel · 979 m, el salto de agua más alto del mundo</p>
         <p class="v-caption" data-anim="v-cap-d">Caracas · al pie del Ávila</p>
         <p class="v-caption" data-anim="v-cap-e">La arepera · ya huele a budare</p>

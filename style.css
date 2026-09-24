@@ -209,6 +209,10 @@ em { font-style: italic; font-weight: 300; color: var(--accent); transition: col
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
   :root { --stage: min(78vw, 46vh); }
+  /* mix-blend-mode forces the browser to recompute blending against everything scrolling
+     underneath a fixed element on every frame — costly on phone GPUs. A solid bar is just as
+     readable and far cheaper to composite while scrolling. */
+  .nav { mix-blend-mode: normal; background: rgba(8, 19, 58, 0.85); }
   .nav__links a:not(.nav__menu):not(.nav__home) { display: none; }
   .nav__links { gap: 10px; }
   .nav__menu, .nav__home { border: 1px solid currentColor; border-radius: 99px; padding: 9px 16px; }
@@ -224,6 +228,9 @@ em { font-style: italic; font-weight: 300; color: var(--accent); transition: col
   .credits { grid-template-columns: 1fr; }
   .scroll-hint { display: none; }
   .stage__caption { font-size: 20px; }
+  /* filter is no longer animated per frame on these on mobile (see app.js `lowPower`); dropping it
+     from will-change avoids promoting them to a dedicated GPU layer for a hint that's now unused. */
+  .layer, .v-box, .v-tree { will-change: transform, opacity; }
 }
 
 @media (max-width: 380px) {
