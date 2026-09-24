@@ -208,7 +208,8 @@ em { font-style: italic; font-weight: 300; color: var(--accent); transition: col
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
   :root { --stage: min(78vw, 46vh); }
-  .nav__links { display: none; }
+  .nav__links a:not(.nav__menu) { display: none; }
+  .nav__menu { border: 1px solid currentColor; border-radius: 99px; padding: 9px 16px; }
   .sticky { grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; gap: 4vh; padding-top: 70px; }
   .stage { order: -1; }
   .scene--hero .stage { order: 0; }
@@ -239,3 +240,63 @@ body::before {
   content: ""; position: absolute; left: 0; top: -1px; width: 180px; height: 3px;
   background: linear-gradient(90deg, var(--ve-yellow) 0 33.3%, var(--ve-blue) 33.3% 66.6%, var(--ve-red) 66.6%);
 }
+
+/* ---------- hero background: Salto Ángel ---------- */
+.hero__bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.hero__bg img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transform-origin: 12% 18%; filter: blur(1.5px); will-change: transform; }
+.hero__bg::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(8, 19, 58, 0.72) 0%, rgba(8, 19, 58, 0.35) 34%, rgba(8, 19, 58, 0) 58%),
+    linear-gradient(180deg, rgba(8, 19, 58, 0.25) 0%, rgba(8, 19, 58, 0) 22%, rgba(8, 19, 58, 0) 70%, #08133a 100%);
+}
+.scene--hero .sticky { isolation: isolate; }
+@media (max-width: 860px) {
+  .hero__bg::after { background: linear-gradient(180deg, rgba(8, 19, 58, 0.3) 0%, rgba(8, 19, 58, 0.55) 55%, #08133a 100%); }
+}
+
+/* ---------- viaje del turpial ---------- */
+.v-sticky { display: block; padding: 0; background: #8ec5ea; }
+.v-tree { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; will-change: transform, filter; }
+.v-box { position: absolute; left: 50%; top: 50%; width: max(100vw, 177.78vh); aspect-ratio: 16 / 9; translate: -50% -50%; will-change: transform, filter, opacity; pointer-events: none; }
+.v-rama { width: 100%; height: 100%; display: block; }
+.v-bird { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; will-change: transform; }
+.v-bird img { position: absolute; display: block; max-width: none; height: auto; opacity: 0; filter: drop-shadow(0 10px 14px rgba(20, 40, 70, .25)); }
+.v-bird img.is-on { opacity: 1; }
+.v-copy { position: absolute; left: clamp(20px, 6vw, 110px); bottom: 14vh; z-index: 4; max-width: 560px; }
+.v-copy .eyebrow { color: #fff; text-shadow: 0 1px 12px rgba(0, 30, 70, .45); }
+.v-title { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: clamp(44px, 6.4vw, 96px); line-height: .98; letter-spacing: -0.03em; color: #fff; text-shadow: 0 2px 30px rgba(0, 30, 70, .35); }
+.v-title .line { display: block; overflow: hidden; padding-bottom: .06em; }
+.v-title .line > span { display: inline-block; }
+.v-title em { color: var(--ve-yellow); font-style: italic; }
+.v-caption { position: absolute; right: clamp(20px, 6vw, 110px); bottom: 8vh; z-index: 4; margin: 0; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: #fff; opacity: 0; text-shadow: 0 1px 10px rgba(0, 30, 70, .5); }
+.v-fade { position: absolute; inset: 0; z-index: 5; background: radial-gradient(ellipse at 50% 55%, #fff4dc 0%, #f6d28a 60%, #e9b35c 100%); opacity: 0; pointer-events: none; }
+.v-hint { z-index: 4; color: #fff; }
+@media (max-width: 700px) { .v-caption { left: 20px; right: 20px; text-align: right; } .v-copy { bottom: 16vh; } }
+.v-lid { position: absolute; display: none; border-radius: 50%; background: radial-gradient(circle at 50% 25%, #24222a, #141318 75%); box-shadow: 0 0 2px 1px rgba(20,19,24,.7); border-bottom: 1px solid #070709; transform-origin: 50% 0; transform: scaleY(0); }
+.v-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; will-change: transform; }
+.v-box { z-index: 1; }
+.v-clouds { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.v-cloud { position: absolute; left: 0; top: 0; width: 55vw; max-width: none; height: auto; opacity: 0; will-change: transform, opacity; }
+.v-haze { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, #fffaf3 0%, #f3f1f5 55%, #e4ecf6 100%); opacity: 0; }
+/* start button / skip */
+html.is-locked { scrollbar-width: none; }
+html.is-locked::-webkit-scrollbar { display: none; }
+.v-start {
+  margin-top: 28px; display: inline-flex; align-items: center; gap: 12px; cursor: pointer;
+  padding: 15px 26px 15px 28px; border: 0; border-radius: 99px;
+  background: var(--ve-yellow); color: #08133a; font: 600 16px/1 var(--font-body, Inter, sans-serif); letter-spacing: .02em;
+  box-shadow: 0 10px 30px rgba(0, 30, 70, .35); transition: background .2s, box-shadow .2s, scale .2s;
+}
+.v-start i { font-style: normal; font-size: 11px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #08133a; color: var(--ve-yellow); padding-left: 2px; }
+.v-start:hover { scale: 1.04; box-shadow: 0 14px 36px rgba(0, 30, 70, .45); }
+.v-start:focus-visible, .v-skip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+html.is-playing .v-start { pointer-events: none; }
+html.is-locked:not(.is-playing) .v-skip { opacity: 1; pointer-events: auto; }
+.v-skip {
+  position: absolute; left: clamp(20px, 4vw, 56px); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 6;
+  padding: 9px 16px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .7); background: rgba(8, 19, 58, .28);
+  color: #fff; font-size: 13px; letter-spacing: .04em; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .4s;
+  backdrop-filter: blur(6px);
+}
+html.is-playing .v-skip { opacity: 1; pointer-events: auto; }

@@ -16,20 +16,62 @@
   <div class="progress" aria-hidden="true"><span></span></div>
 
   <header class="nav">
-    <a class="nav__logo" href="#hero">Arepa<span>.</span></a>
+    <a class="nav__logo" href="#viaje">Arepa<span>.</span></a>
     <nav class="nav__links">
       <a href="#reina">Reina Pepiada</a>
       <a href="#pelua">Pelúa</a>
       <a href="#domino">Dominó</a>
       <a href="#perico">Perico</a>
+      <a href="#menu" class="nav__menu">Menú</a>
     </nav>
     <a class="nav__cta" href="#creditos">Sobre el proyecto</a>
   </header>
 
   <main>
+    <!-- VIAJE DEL TURPIAL: araguaney → Morrocoy → selva → Roraima → Salto Ángel → Caracas → la arepera -->
+    <section class="scene scene--viaje" id="viaje" data-length="1">
+      <div class="sticky v-sticky">
+        <img class="v-tree" data-anim="v-tree" src="img/araguaney-arbol.webp" alt="Araguaney en flor en los llanos" />
+        <img class="v-bg" data-anim="v-morrocoy" src="img/morrocoy.webp" alt="Cayos de Morrocoy" />
+        <img class="v-bg" data-anim="v-selva" src="img/selva.webp" alt="Selva de Canaima con tepuyes al fondo" />
+        <img class="v-bg" data-anim="v-roraima" src="img/roraima.webp" alt="Tepuy Roraima en la Gran Sabana" />
+        <img class="v-bg" data-anim="v-salto" src="img/salto-angel-ilustrado.webp" alt="Salto Ángel ilustrado" />
+        <img class="v-bg" data-anim="v-caracas" src="img/caracas-avila.webp" alt="Caracas al pie del Ávila" />
+        <img class="v-bg" data-anim="v-arepera" src="img/arepera-fachada.webp" alt="Fachada de la arepera" />
+        <div class="v-box" data-anim="v-box"><img class="v-rama" src="img/araguaney-rama.webp" alt="" /></div>
+        <div class="v-bird" data-anim="v-bird" aria-hidden="true">
+          <img data-pose="posado" src="img/turpial-posado.webp" alt="" />
+          <img data-pose="despega" src="img/turpial-despega.webp" alt="" />
+          <img data-pose="arriba" src="img/turpial-alas-arriba.webp" alt="" />
+          <img data-pose="abajo" src="img/turpial-alas-abajo.webp" alt="" />
+          <i class="v-lid"></i>
+        </div>
+        <div class="v-copy" data-anim="v-copy">
+          <p class="eyebrow">El viaje del turpial</p>
+          <h1 class="v-title"><span class="line"><span>Toda arepa</span></span><span class="line"><span><em>empieza lejos.</em></span></span></h1>
+          <button class="v-start" type="button" data-anim="v-start"><span>Empezar</span><i aria-hidden="true">▶</i></button>
+        </div>
+        <div class="v-clouds" aria-hidden="true">
+          <img class="v-cloud" src="img/nube-1.webp" alt="" /><img class="v-cloud" src="img/nube-2.webp" alt="" /><img class="v-cloud" src="img/nube-3.webp" alt="" />
+          <img class="v-cloud" src="img/nube-2.webp" alt="" /><img class="v-cloud" src="img/nube-1.webp" alt="" /><img class="v-cloud" src="img/nube-3.webp" alt="" />
+          <div class="v-haze" data-anim="v-haze"></div>
+        </div>
+        <p class="v-caption" data-anim="v-caption">Araguaney · el árbol nacional, en flor</p>
+        <p class="v-caption" data-anim="v-cap-m">Morrocoy · cayos de agua turquesa</p>
+        <p class="v-caption" data-anim="v-cap-b">La selva · donde pastan los chigüires</p>
+        <p class="v-caption" data-anim="v-cap-r">Roraima · el tepuy de la Gran Sabana</p>
+        <p class="v-caption" data-anim="v-cap-c">Salto Ángel · 979 m, el salto de agua más alto del mundo</p>
+        <p class="v-caption" data-anim="v-cap-d">Caracas · al pie del Ávila</p>
+        <p class="v-caption" data-anim="v-cap-e">La arepera · ya huele a budare</p>
+        <div class="v-fade" data-anim="v-fade"></div>
+        <button class="v-skip" type="button" data-anim="v-skip">Saltar intro</button>
+      </div>
+    </section>
+
     <!-- HERO: closed arepa opens and reveals it is empty -->
     <section class="scene scene--hero" id="hero" data-length="1.7">
       <div class="sticky">
+        <div class="hero__bg" data-anim="hero-bg" aria-hidden="true"><img src="img/arepera-interior.webp" alt="" /></div>
         <div class="hero__copy">
           <p class="eyebrow" data-anim="hero-eyebrow">Venezuela · Hecha a mano</p>
           <h1 class="hero__title" data-anim="hero-title">
