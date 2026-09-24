@@ -204,12 +204,14 @@ em { font-style: italic; font-weight: 300; color: var(--accent); transition: col
 .credits__list { list-style: none; margin: 0; padding: 0; }
 .credits__list li { display: flex; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--ink-faint); font-size: 15px; }
 .credits__list span { width: 110px; flex: none; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); padding-top: 3px; }
+.credits__list li > a { min-width: 0; overflow-wrap: anywhere; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
   :root { --stage: min(78vw, 46vh); }
-  .nav__links a:not(.nav__menu) { display: none; }
-  .nav__menu { border: 1px solid currentColor; border-radius: 99px; padding: 9px 16px; }
+  .nav__links a:not(.nav__menu):not(.nav__home) { display: none; }
+  .nav__links { gap: 10px; }
+  .nav__menu, .nav__home { border: 1px solid currentColor; border-radius: 99px; padding: 9px 16px; }
   .sticky { grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; gap: 4vh; padding-top: 70px; }
   .stage { order: -1; }
   .scene--hero .stage { order: 0; }
@@ -222,6 +224,10 @@ em { font-style: italic; font-weight: 300; color: var(--accent); transition: col
   .credits { grid-template-columns: 1fr; }
   .scroll-hint { display: none; }
   .stage__caption { font-size: 20px; }
+}
+
+@media (max-width: 380px) {
+  .nav__cta { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
