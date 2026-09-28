@@ -77,6 +77,11 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 // which forces a re-rasterize every tick) so scrolling stays smooth on phones.
 const lowPower = window.matchMedia("(max-width: 860px), (pointer: coarse)").matches;
 
+// Set to true to bring back "El viaje del turpial" as the landing intro. While false, the whole
+// #viaje scene is skipped (never measured, never rendered, hidden from layout) and the page opens
+// straight on the arepa hero — nothing about the intro itself is removed, just switched off.
+const INTRO_ENABLED = false;
+
 const FROM = {
   left: { x: -130, y: -10, r: -55 },
   right: { x: 130, y: -15, r: 55 },
@@ -161,7 +166,9 @@ const io = new IntersectionObserver((entries) => {
 const root = document.documentElement;
 const glow = document.querySelector(".glow");
 const bar = document.querySelector(".progress span");
-const scenes = [...document.querySelectorAll(".scene")].map((node) => {
+const scenes = [...document.querySelectorAll(".scene")]
+  .filter((node) => INTRO_ENABLED || node.id !== "viaje")
+  .map((node) => {
   const recipe = node.classList.contains("scene--recipe") ? RECIPES[+node.dataset.index] : null;
   const q = (s) => node.querySelector(s);
   const qa = (s) => [...node.querySelectorAll(s)];
@@ -468,23 +475,27 @@ function applyTheme(recipe) {
 // (scroll is blocked meanwhile) and drops you at the arepa, where normal scrolling takes over.
 // Coming back to the top shows the first frame again, so the button can be pressed once more.
 const AUTO_SECONDS = 58;
-const auto = { state: "idle", p: 0, start: 0 };            // idle (first visit, locked) → playing → done
+const auto = { state: INTRO_ENABLED ? "idle" : "done", p: 0, start: 0 };  // idle (first visit, locked) → playing → done
 const locked = () => auto.state === "idle" || auto.state === "playing";
 const lockKeys = new Set(["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "]);
 const blockScroll = (e) => { if (locked()) e.preventDefault(); };
 const blockKeys = (e) => { if (locked() && lockKeys.has(e.key)) e.preventDefault(); };
 const snapToTop = () => { if (locked() && window.scrollY !== 0 && !auto.test) window.scrollTo(0, 0); };
-// non-passive listeners force the browser to wait on the main thread before every scroll/touch tick,
-// which is only worth paying for during the brief intro lock — they're removed for good once it ends
-// so the rest of the (long) page scrolls at full native speed, especially on mobile.
-window.addEventListener("wheel", blockScroll, { passive: false });
-window.addEventListener("touchmove", blockScroll, { passive: false });
-window.addEventListener("keydown", blockKeys);
-window.addEventListener("scroll", snapToTop);
-document.documentElement.classList.add("is-locked");
-if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-window.scrollTo(0, 0);
 let snap = false;                                         // next frame: jump every scene straight to its scroll position
+if (INTRO_ENABLED) {
+  // non-passive listeners force the browser to wait on the main thread before every scroll/touch tick,
+  // which is only worth paying for during the brief intro lock — they're removed for good once it ends
+  // so the rest of the (long) page scrolls at full native speed, especially on mobile.
+  window.addEventListener("wheel", blockScroll, { passive: false });
+  window.addEventListener("touchmove", blockScroll, { passive: false });
+  window.addEventListener("keydown", blockKeys);
+  window.addEventListener("scroll", snapToTop);
+  document.documentElement.classList.add("is-locked");
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+  window.scrollTo(0, 0);
+} else {
+  document.getElementById("viaje").style.display = "none";
+}
 function startJourney() {
   if (auto.state === "playing") return;
   window.scrollTo(0, 0);
