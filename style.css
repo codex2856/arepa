@@ -269,6 +269,9 @@ body::before {
 }
 
 /* ---------- viaje del turpial ---------- */
+/* Hidden by default so it never flashes on load (the stylesheet is render-blocking, JS isn't).
+   app.js sets INTRO_ENABLED — when true it also overrides this with an inline display:block. */
+#viaje { display: none; }
 .v-sticky { display: block; padding: 0; background: #8ec5ea; }
 .v-tree { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; will-change: transform, filter; }
 .v-box { position: absolute; left: 50%; top: 50%; width: max(100vw, 177.78vh); aspect-ratio: 16 / 9; translate: -50% -50%; will-change: transform, filter, opacity; pointer-events: none; }
