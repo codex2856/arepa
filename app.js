@@ -483,6 +483,9 @@ const blockKeys = (e) => { if (locked() && lockKeys.has(e.key)) e.preventDefault
 const snapToTop = () => { if (locked() && window.scrollY !== 0 && !auto.test) window.scrollTo(0, 0); };
 let snap = false;                                         // next frame: jump every scene straight to its scroll position
 if (INTRO_ENABLED) {
+  // #viaje is display:none by default in style.css (so it never flashes on load, since the
+  // stylesheet blocks rendering and this script — at the end of body — doesn't); show it again here.
+  document.getElementById("viaje").style.display = "block";
   // non-passive listeners force the browser to wait on the main thread before every scroll/touch tick,
   // which is only worth paying for during the brief intro lock — they're removed for good once it ends
   // so the rest of the (long) page scrolls at full native speed, especially on mobile.
@@ -493,8 +496,6 @@ if (INTRO_ENABLED) {
   document.documentElement.classList.add("is-locked");
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
   window.scrollTo(0, 0);
-} else {
-  document.getElementById("viaje").style.display = "none";
 }
 function startJourney() {
   if (auto.state === "playing") return;
